@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Create User - Aspera Web</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script defer th:src="@{/js/user-create.js}"></script>
+    <th:block th:replace="~{fragments/theme :: themeLogic}"></th:block>
+</head>
+
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <nav class="navbar" aria-label="Administrator navigation">
+        <a th:href="@{/admin/dashboard}" class="navbar-brand">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"
+                focusable="false">
+                <path
+                    d="M16,2A14,14,0,1,0,30,16,14.0158,14.0158,0,0,0,16,2Zm0,26A12,12,0,1,1,28,16,12.0137,12.0137,0,0,1,16,28Z">
+                </path>
+                <path d="M15 11L15 21 17 21 17 11 15 11zM11 11L11 21 13 21 13 11 11 11zM19 11L19 21 21 21 21 11 19 11z">
+                </path>
+            </svg>
+            <span>Aspera Admin</span>
+        </a>
+        <div class="navbar-actions">
+            <th:block th:replace="~{fragments/theme :: toggleButton}"></th:block>
+            <a th:href="@{/admin/dashboard}" class="btn btn-secondary btn-sm">Dashboard</a>
+            <form th:action="@{/logout}" method="post" class="inline-form">
+                <button type="submit" class="btn btn-danger btn-sm">Sign Out</button>
+            </form>
+        </div>
+    </nav>
+
+    <main id="main-content" class="app-container" tabindex="-1">
+        <section class="card card-narrow" aria-labelledby="create-user-title">
+            <header class="card-header">
+                <div class="page-heading">
+                    <h1 id="create-user-title" class="card-title">Create New User</h1>
+                    <p class="page-subtitle">Set up an account and its initial access role.</p>
+                </div>
+            </header>
+            <div class="card-body">
+                <form id="createUserForm" th:action="@{/admin/users/create}" method="post" autocomplete="off">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" id="username" name="username" class="form-control"
+                            placeholder="Enter a unique username" autocomplete="off" autocapitalize="none"
+                            spellcheck="false" minlength="3" maxlength="64"
+                            pattern="[A-Za-z0-9][A-Za-z0-9._-]{2,63}"
+                            aria-describedby="username-help" required autofocus>
+                        <p id="username-help" class="helper-text">Use 3–64 characters, start with a letter or number, then use letters, numbers, dots, underscores, or hyphens.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-control"
+                            placeholder="user@example.com" autocomplete="off" inputmode="email" maxlength="254"
+                            required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">Temporary Password</label>
+                        <input type="password" id="password" name="password" class="form-control"
+                            placeholder="Enter a temporary password" autocomplete="new-password" minlength="12"
+                            maxlength="72" aria-describedby="password-help" required>
+                        <p id="password-help" class="helper-text">Use at least 12 characters and no more than 72 UTF-8 bytes, then share it through a secure channel.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="role" class="form-label">Role</label>
+                        <select id="role" name="role" class="form-control" aria-describedby="role-help" required>
+                            <option value="USER">User — assigned file access only</option>
+                            <option value="ADMIN">Administrator — full management access</option>
+                        </select>
+                        <p id="role-help" class="helper-text">Grant administrator access only when it is required.</p>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Create User</button>
+                        <a th:href="@{/admin/dashboard}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

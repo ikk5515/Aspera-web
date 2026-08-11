@@ -1,0 +1,9 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="themeLogic">
+    <script th:src="@{/js/theme.js}"></script>
+</th:block>
+
+<button xmlns:th="http://www.thymeleaf.org" th:fragment="toggleButton" type="button" id="theme-toggle"
+    class="btn btn-secondary btn-sm btn-icon theme-toggle" aria-label="Switch theme" aria-pressed="false">
+    <span id="theme-icon" aria-hidden="true">Light</span>
+    <span class="sr-only">Switch color theme</span>
+</button>

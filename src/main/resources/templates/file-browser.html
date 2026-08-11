@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+    <meta name="robots" content="noindex, nofollow">
+    <title>Files - Aspera Web</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/theme :: themeLogic}"></th:block>
+</head>
+
+<body id="fileBrowserPage"
+    th:attr="data-current-directory=${currentPath},data-directory-sizes-url=@{/files/dir-sizes},data-transfer-spec-url=@{/files/transfer-spec},data-delete-item-url=@{/files/delete}">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <nav class="navbar" aria-label="Main navigation">
+        <a th:href="@{/files}" class="navbar-brand">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"
+                focusable="false">
+                <path
+                    d="M16,2A14,14,0,1,0,30,16,14.0158,14.0158,0,0,0,16,2Zm0,26A12,12,0,1,1,28,16,12.0137,12.0137,0,0,1,16,28Z">
+                </path>
+                <path d="M15 11L15 21 17 21 17 11 15 11zM11 11L11 21 13 21 13 11 11 11zM19 11L19 21 21 21 21 11 19 11z">
+                </path>
+            </svg>
+            <span>Aspera Web</span>
+        </a>
+        <div class="navbar-actions">
+            <button id="connect-status" type="button" class="connect-status-badge"
+                aria-label="Aspera Connect status: checking"
+                title="Open the Aspera Connect download page if Connect is unavailable">
+                <span class="connect-status-dot" aria-hidden="true"></span>
+                <span id="connect-status-text" aria-live="polite">Checking…</span>
+            </button>
+
+            <th:block th:replace="~{fragments/theme :: toggleButton}"></th:block>
+            <span class="navbar-user" th:text="${currentUsername}">User</span>
+            <span th:if="${isAdmin}" class="badge badge-admin">Admin</span>
+            <a th:if="${isAdmin}" th:href="@{/admin/dashboard}"
+                class="btn btn-secondary btn-sm">Admin Dashboard</a>
+            <form th:action="@{/logout}" method="post" class="inline-form">
+                <button type="submit" class="btn btn-danger btn-sm">Sign Out</button>
+            </form>
+        </div>
+    </nav>
+
+    <main id="main-content" class="app-container" tabindex="-1">
+        <div th:if="${message}" class="alert alert-success" role="status" aria-live="polite">
+            <span th:text="${message}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-error" role="alert" aria-live="assertive">
+            <span th:text="${error}"></span>
+        </div>
+        <div th:if="${param.accessDenied}" class="alert alert-error" role="alert" aria-live="assertive">
+            <span>Your account does not have permission to open that page.</span>
+        </div>
+        <div th:if="${sizeSortPartial}" class="alert alert-info" role="status" aria-live="polite">
+            Some folder sizes could not be calculated within the request limit. They are shown as … and placed
+            after items with known sizes.
+        </div>
+        <div th:if="${invalidChildPathsPresent}" class="alert alert-info" role="status" aria-live="polite">
+            Some items have a path that exceeds the safe Node API limit. They remain visible, but navigation and
+            file actions are disabled.
+        </div>
+        <div id="ui-notification" class="alert ui-notification" role="status" aria-live="polite" hidden></div>
+
+        <section class="card" aria-labelledby="file-browser-title">
+            <header class="card-header">
+                <div class="page-heading">
+                    <h1 id="file-browser-title" class="card-title">File Browser</h1>
+                    <p class="page-subtitle"><span th:text="${totalItems}">0</span> items in this folder</p>
+                </div>
+                <div class="card-header-actions">
+                    <details th:if="${canCreateFolder}" class="create-folder-panel">
+                        <summary class="btn btn-secondary btn-sm">Create Folder</summary>
+                        <form th:action="@{/files/create-folder}" method="post">
+                            <input type="hidden" name="parentPath" th:value="${currentPath}">
+                            <div class="compact-form-row">
+                                <div class="form-group">
+                                    <label for="folderName" class="form-label">Folder name</label>
+                                    <input type="text" id="folderName" name="folderName" class="form-control"
+                                        autocomplete="off" maxlength="255" placeholder="New folder" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Create</button>
+                            </div>
+                        </form>
+                    </details>
+                    <button th:if="${canUpload}" id="uploadFiles" type="button"
+                        class="btn btn-primary btn-sm">Upload Files</button>
+                </div>
+            </header>
+
+            <div class="card-body">
+                <div class="toolbar">
+                    <div class="toolbar-group">
+                        <nav aria-label="Current folder">
+                            <ol class="breadcrumb">
+                                <li>
+                                    <a th:href="@{/files(path='/')}" class="btn btn-secondary btn-sm">
+                                        <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor"
+                                            aria-hidden="true" focusable="false">
+                                            <path
+                                                d="M16.6125,2.2144l11.4087,11.4829l-1.4282,1.4053l-2.593-2.6099v17.5073h-8v-8h-8v8h-8V12.4927l-2.593,2.6099l-1.4282-1.4053L15.3875,2.2144C15.7173,1.8895,16.2827,1.8895,16.6125,2.2144z">
+                                            </path>
+                                        </svg>
+                                        Root
+                                    </a>
+                                </li>
+                                <li th:if="${currentPath != '/'}" aria-hidden="true">/</li>
+                                <li th:if="${currentPath != '/'}">
+                                    <span class="breadcrumb-current" th:text="${currentPath}"
+                                        th:title="${currentPath}">/folder</span>
+                                </li>
+                            </ol>
+                        </nav>
+
+                        <button id="btnDownloadSelected" type="button" class="btn btn-primary btn-sm" hidden>
+                            <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"
+                                focusable="false">
+                                <path d="M26 24v4H6v-4H4v4a2 2 0 002 2h20a2 2 0 002-2v-4z"></path>
+                                <path d="M26 14l-2-2-6 6V2h-4v16l-6-6-2 2 10 10z"></path>
+                            </svg>
+                            Download Selected
+                        </button>
+                    </div>
+
+                    <div class="toolbar-group">
+                        <div class="dropdown">
+                            <button type="button" class="btn btn-secondary btn-sm" id="sortDropdownBtn"
+                                aria-expanded="false"
+                                aria-controls="sortDropdownContent" aria-haspopup="true">
+                                <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor"
+                                    aria-hidden="true" focusable="false">
+                                    <path
+                                        d="M24 24l-4 4-4-4 1.414-1.414L21 26.172V4h2v22.172l3.586-3.586L28 24zM6 8l4-4 4 4-1.414 1.414L9 5.828V28H7V5.828L3.414 9.414 2 8z">
+                                    </path>
+                                </svg>
+                                Sort
+                            </button>
+
+                            <div class="sort-dropdown-menu" id="sortDropdownContent" hidden>
+                                <form id="sortForm" th:action="@{/files}" method="get">
+                                    <input type="hidden" name="path" th:value="${currentPath}">
+                                    <input type="hidden" name="page" value="1">
+                                    <fieldset class="sort-fieldset">
+                                        <legend class="sort-legend">Choose one sort field and direction</legend>
+
+                                        <div class="sort-option-row"
+                                            th:classappend="${currentSorts == null or !currentSorts.contains('name')} ? 'disabled'">
+                                            <label class="sort-check-label">
+                                                <input type="checkbox" class="sort-check" name="sort" value="name"
+                                                    th:checked="${currentSorts != null and currentSorts.contains('name')}">
+                                                Name
+                                            </label>
+                                            <div class="order-toggle-group" aria-label="Name sort direction">
+                                                <input type="hidden" name="order"
+                                                    th:value="${currentSorts != null and currentOrders != null and currentSorts.indexOf('name') >= 0 and currentOrders.size() > currentSorts.indexOf('name') ? currentOrders.get(currentSorts.indexOf('name')) : 'asc'}">
+                                                <button type="button" class="order-btn"
+                                                    th:classappend="${(currentSorts == null or currentOrders == null or currentSorts.indexOf('name') < 0 or currentOrders.size() <= currentSorts.indexOf('name') or currentOrders.get(currentSorts.indexOf('name')) != 'desc') ? 'active' : ''}"
+                                                    data-order="asc">Asc</button>
+                                                <button type="button" class="order-btn"
+                                                    th:classappend="${(currentSorts != null and currentOrders != null and currentSorts.indexOf('name') >= 0 and currentOrders.size() > currentSorts.indexOf('name') and currentOrders.get(currentSorts.indexOf('name')) == 'desc') ? 'active' : ''}"
+                                                    data-order="desc">Desc</button>
+                                            </div>
+                                        </div>
+
+                                        <div class="sort-option-row"
+                                            th:classappend="${currentSorts == null or !currentSorts.contains('size')} ? 'disabled'">
+                                            <label class="sort-check-label">
+                                                <input type="checkbox" class="sort-check" name="sort" value="size"
+                                                    th:checked="${currentSorts != null and currentSorts.contains('size')}">
+                                                Size
+                                            </label>
+                                            <div class="order-toggle-group" aria-label="Size sort direction">
+                                                <input type="hidden" name="order"
+                                                    th:value="${currentSorts != null and currentOrders != null and currentSorts.indexOf('size') >= 0 and currentOrders.size() > currentSorts.indexOf('size') ? currentOrders.get(currentSorts.indexOf('size')) : 'asc'}">
+                                                <button type="button" class="order-btn"
+                                                    th:classappend="${(currentSorts == null or currentOrders == null or currentSorts.indexOf('size') < 0 or currentOrders.size() <= currentSorts.indexOf('size') or currentOrders.get(currentSorts.indexOf('size')) != 'desc') ? 'active' : ''}"
+                                                    data-order="asc">Asc</button>
+                                                <button type="button" class="order-btn"
+                                                    th:classappend="${(currentSorts != null and currentOrders != null and currentSorts.indexOf('size') >= 0 and currentOrders.size() > currentSorts.indexOf('size') and currentOrders.get(currentSorts.indexOf('size')) == 'desc') ? 'active' : ''}"
+                                                    data-order="desc">Desc</button>
+                                            </div>
+                                        </div>
+
+                                        <div class="sort-option-row">
+                                            <label class="sort-check-label">
+                                                <input type="checkbox" class="sort-check" name="sort" value="date"
+                                                    th:checked="${currentSorts != null and currentSorts.contains('date')}">
+                                                Date Modified
+                                            </label>
+                                            <div class="order-toggle-group" aria-label="Date sort direction">
+                                                <input type="hidden" name="order"
+                                                    th:value="${currentSorts != null and currentOrders != null and currentSorts.indexOf('date') >= 0 and currentOrders.size() > currentSorts.indexOf('date') ? currentOrders.get(currentSorts.indexOf('date')) : 'asc'}">
+                                                <button type="button" class="order-btn"
+                                                    th:classappend="${(currentSorts == null or currentOrders == null or currentSorts.indexOf('date') < 0 or currentOrders.size() <= currentSorts.indexOf('date') or currentOrders.get(currentSorts.indexOf('date')) != 'desc') ? 'active' : ''}"
+                                                    data-order="asc">Asc</button>
+                                                <button type="button" class="order-btn"
+                                                    th:classappend="${(currentSorts != null and currentOrders != null and currentSorts.indexOf('date') >= 0 and currentOrders.size() > currentSorts.indexOf('date') and currentOrders.get(currentSorts.indexOf('date')) == 'desc') ? 'active' : ''}"
+                                                    data-order="desc">Desc</button>
+                                            </div>
+                                        </div>
+                                    </fieldset>
+
+                                    <button id="applySort" type="button"
+                                        class="btn btn-primary btn-sm w-100 mt-3">Apply Sort</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive responsive-card-table">
+                    <table class="file-table">
+                        <caption class="sr-only">Files and folders in the current directory</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">
+                                    <label for="selectAll" class="sr-only">Select all downloadable files</label>
+                                    <input type="checkbox" id="selectAll">
+                                </th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Size</th>
+                                <th scope="col">Type</th>
+                                <th scope="col">Date Modified</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${currentPath != '/'}" class="parent-directory-row">
+                                <td colspan="6" data-label="">
+                                    <div class="file-name-wrap">
+                                        <span class="file-icon" aria-hidden="true">
+                                            <svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor">
+                                                <path d="M14 25h4v-11h5l-7-7-7 7h5z"></path>
+                                                <path d="M26 26H6v-6h-2v6a2 2 0 002 2h20a2 2 0 002-2v-6h-2z"></path>
+                                            </svg>
+                                        </span>
+                                        <a id="parentDirectoryLink" th:href="@{/files(path='/')}" class="file-link"
+                                            th:data-current-path="${currentPath}">Parent folder</a>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr th:each="file : ${files}">
+                                <td data-label="Select">
+                                    <label th:if="${file.type == 'file' and file.canDownload}">
+                                        <span class="sr-only" th:text="|Select ${file.name}|">Select file</span>
+                                        <input type="checkbox" name="selectedFiles" th:value="${file.path}"
+                                            class="file-checkbox">
+                                    </label>
+                                </td>
+                                <td data-label="Name" class="file-name-cell">
+                                    <div class="file-name-wrap">
+                                        <span class="file-icon" aria-hidden="true">
+                                            <svg th:if="${file.type == 'directory'}" width="20" height="20"
+                                                viewBox="0 0 32 32" fill="#FDD835">
+                                                <path
+                                                    d="M28.5 28H3.5a1.5 1.5 0 01-1.5-1.5v-19a1.5 1.5 0 011.5-1.5h10l3 3.5h12a1.5 1.5 0 011.5 1.5v15.5a1.5 1.5 0 01-1.5 1.5z">
+                                                </path>
+                                            </svg>
+                                            <svg th:if="${file.type == 'file'}" width="20" height="20"
+                                                viewBox="0 0 32 32" fill="currentColor">
+                                                <path d="M6 3v26h20V9.6l-6.4-6.6H6zm2 2h10v6h6v18H8V5z"></path>
+                                            </svg>
+                                        </span>
+                                        <a th:if="${file.type == 'directory' and file.pathSafe}"
+                                            th:href="@{/files(path=${file.path})}"
+                                            class="file-link" th:text="${file.name}">Folder</a>
+                                        <span th:if="${file.type == 'directory' and !file.pathSafe}" class="path-text"
+                                            title="This path exceeds the safe Node API limit" th:text="${file.name}">Folder</span>
+                                        <span th:if="${file.type == 'file'}" class="path-text"
+                                            th:text="${file.name}">File</span>
+                                    </div>
+                                </td>
+                                <td th:if="${file.type == 'directory'}" data-label="Size" class="dir-size"
+                                    th:attr="data-size-path=${file.pathSafe ? file.path : null},data-size-status=${file.pathSafe and file.size == '...'} ? 'pending' : 'loaded'"
+                                    th:text="${file.size}">…</td>
+                                <td th:unless="${file.type == 'directory'}" data-label="Size"
+                                    th:text="${file.size}">0 KB</td>
+                                <td data-label="Type" th:text="${file.type == 'directory' ? 'Folder' : 'File'}">File</td>
+                                <td data-label="Modified" th:text="${file.modifiedTime}">2026-01-01</td>
+                                <td data-label="Actions">
+                                    <div class="table-actions">
+                                        <button th:if="${file.type == 'file' and file.canDownload}" type="button"
+                                            class="action-btn btn-download" th:data-filename="${file.name}"
+                                            th:aria-label="|Download ${file.name}|">
+                                            <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor"
+                                                aria-hidden="true" focusable="false">
+                                                <path d="M26 24v4H6v-4H4v4a2 2 0 002 2h20a2 2 0 002-2v-4z"></path>
+                                                <path
+                                                    d="M26 14L24.59 12.59 17 20.17 17 2 15 2 15 20.17 7.41 12.59 6 14 16 24 26 14z">
+                                                </path>
+                                            </svg>
+                                            <span class="action-label">Download</span>
+                                        </button>
+
+                                        <button th:if="${file.canDelete}" type="button" class="action-btn btn-delete"
+                                            th:data-filename="${file.name}" th:aria-label="|Delete ${file.name}|">
+                                            <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor"
+                                                aria-hidden="true" focusable="false">
+                                                <path d="M12 12H14V24H12zM18 12H20V24H18z"></path>
+                                                <path
+                                                    d="M4 6V8H6V28a2 2 0 002 2H24a2 2 0 002-2V8h2V6zM8 28V8H24V28zM12 2H20V4H12z">
+                                                </path>
+                                            </svg>
+                                            <span class="action-label">Delete</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr th:if="${files.empty}" class="empty-table-row">
+                                <td colspan="6" data-label="">
+                                    <div class="empty-state">
+                                        <span class="empty-state-icon" aria-hidden="true">📂</span>
+                                        <strong>This folder is empty</strong>
+                                        <p th:if="${canUpload or canCreateFolder}">Upload a file or create a folder to get started.</p>
+                                        <p th:unless="${canUpload or canCreateFolder}">There are no items you can access here.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <nav th:if="${totalPages > 1}" class="pagination-wrap" aria-label="File list pages">
+                    <span class="pagination-summary">
+                        Showing <span th:text="${files.size()}">0</span> of <span th:text="${totalItems}">0</span> items
+                    </span>
+                    <ul class="pagination">
+                        <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
+                            <a th:if="${currentPage > 1}" class="page-link"
+                                th:href="@{/files(path=${currentPath}, page=${currentPage - 1}, size=${pageSize}, sort=${currentSorts}, order=${currentOrders}, groupBy=${currentGroupBy})}"
+                                rel="prev">Previous</a>
+                            <span th:unless="${currentPage > 1}" class="page-link" aria-disabled="true">Previous</span>
+                        </li>
+
+                        <li class="page-item" th:each="i : ${pageNumbers}"
+                            th:classappend="${currentPage == i} ? 'active'">
+                            <a class="page-link"
+                                th:href="@{/files(path=${currentPath}, page=${i}, size=${pageSize}, sort=${currentSorts}, order=${currentOrders}, groupBy=${currentGroupBy})}"
+                                th:text="${i}" th:attr="aria-current=${currentPage == i ? 'page' : null}">1</a>
+                        </li>
+
+                        <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
+                            <a th:if="${currentPage < totalPages}" class="page-link"
+                                th:href="@{/files(path=${currentPath}, page=${currentPage + 1}, size=${pageSize}, sort=${currentSorts}, order=${currentOrders}, groupBy=${currentGroupBy})}"
+                                rel="next">Next</a>
+                            <span th:unless="${currentPage < totalPages}" class="page-link" aria-disabled="true">Next</span>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+    </main>
+
+    <div id="aspera-connect-container" hidden aria-hidden="true"></div>
+    <script src="https://d3gcli72yxqn2z.cloudfront.net/connect/v4/asperaweb-4.min.js"
+        referrerpolicy="no-referrer"></script>
+    <script th:src="@{/js/file-browser.js}" defer></script>
+</body>
+
+</html>

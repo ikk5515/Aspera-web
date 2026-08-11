@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title th:text="${title != null and !#strings.isEmpty(title) ? title + ' - Aspera Web' : 'Request Error - Aspera Web'}">Request Error - Aspera Web</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/theme :: themeLogic}"></th:block>
+</head>
+
+<body class="error-page">
+    <div class="theme-corner">
+        <th:block th:replace="~{fragments/theme :: toggleButton}"></th:block>
+    </div>
+
+    <main class="card error-card" aria-labelledby="error-title">
+        <p class="error-code" th:text="${status != null ? status : 'Error'}">404</p>
+        <h1 id="error-title" class="error-title"
+            th:text="${title != null and !#strings.isEmpty(title) ? title : 'We could not complete that request'}">
+            We could not complete that request
+        </h1>
+        <p class="error-description"
+            th:text="${message != null and !#strings.isEmpty(message) ? message : 'Try again, or return to the main page.'}">
+            Try again, or return to the main page.
+        </p>
+        <p th:if="${requestPath != null and !#strings.isEmpty(requestPath)}" class="helper-text">
+            Requested path: <span class="path-text" th:text="${requestPath}">/missing</span>
+        </p>
+        <div class="error-actions">
+            <a id="error-home" class="btn btn-primary"
+                th:href="${homePath != null and #strings.startsWith(homePath, '/') and !#strings.startsWith(homePath, '//') ? homePath : '/'}">Go to Home</a>
+            <button id="error-back" type="button" class="btn btn-secondary">Go Back</button>
+        </div>
+    </main>
+    <script th:src="@{/js/error-page.js}" defer></script>
+</body>
+
+</html>
