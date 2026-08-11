@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk-jammy@sha256:29467857e8bde40ab1f7befecbda0ea764b95afec1cc7f89aa90f7a766577e19 AS build
+FROM eclipse-temurin:25-jdk-jammy@sha256:f122992af75e61d87892f8a37c60f7cfa498b18748c1c9f8563da9a3b1893278 AS build
 WORKDIR /app
 
 COPY gradle gradle
@@ -8,7 +8,7 @@ RUN chmod +x gradlew
 COPY src src
 RUN ./gradlew --no-daemon clean test bootJar
 
-FROM eclipse-temurin:17-jre-jammy@sha256:89e68b9bb83713510b63e2059a415792a7fc77e14b739a7d7ede97f6d9ca2c38
+FROM eclipse-temurin:25-jre-jammy@sha256:5bd5dbe00f40ea149de434a75029713765a2912cfc1fd770cc7c7aff007384ea
 WORKDIR /app
 
 RUN groupadd --system app && useradd --system --gid app --home-dir /app app
