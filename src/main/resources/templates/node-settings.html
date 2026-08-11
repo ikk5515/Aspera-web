@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Node Configuration - Aspera Web</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/theme :: themeLogic}"></th:block>
+</head>
+
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <nav class="navbar" aria-label="Administrator navigation">
+        <a th:href="@{/admin/dashboard}" class="navbar-brand">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"
+                focusable="false">
+                <path
+                    d="M16,2A14,14,0,1,0,30,16,14.0158,14.0158,0,0,0,16,2Zm0,26A12,12,0,1,1,28,16,12.0137,12.0137,0,0,1,16,28Z">
+                </path>
+                <path d="M15 11L15 21 17 21 17 11 15 11zM11 11L11 21 13 21 13 11 11 11zM19 11L19 21 21 21 21 11 19 11z">
+                </path>
+            </svg>
+            <span>Aspera Admin</span>
+        </a>
+        <div class="navbar-actions">
+            <th:block th:replace="~{fragments/theme :: toggleButton}"></th:block>
+            <a th:href="@{/admin/dashboard}" class="btn btn-secondary btn-sm">Dashboard</a>
+            <form th:action="@{/logout}" method="post" class="inline-form">
+                <button type="submit" class="btn btn-danger btn-sm">Sign Out</button>
+            </form>
+        </div>
+    </nav>
+
+    <main id="main-content" class="app-container" tabindex="-1">
+        <div th:if="${message}" class="alert alert-success" role="status" aria-live="polite">
+            <span th:text="${message}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-error" role="alert" aria-live="assertive">
+            <span th:text="${error}"></span>
+        </div>
+
+        <section class="card card-narrow" aria-labelledby="node-settings-title">
+            <header class="card-header">
+                <div class="page-heading">
+                    <h1 id="node-settings-title" class="card-title">Node Configuration</h1>
+                    <p class="page-subtitle">Connection settings for the Aspera Node API.</p>
+                </div>
+                <span class="badge badge-user">Admin only</span>
+            </header>
+            <div class="card-body">
+                <div class="alert alert-info" role="note">
+                    <span>The saved password is never displayed. Leave the password field blank to keep the current value.</span>
+                </div>
+
+                <form th:action="@{/admin/node-settings}" method="post" autocomplete="off">
+                    <div class="form-group">
+                        <label for="nodeUrl" class="form-label">Node URL</label>
+                        <input type="url" id="nodeUrl" name="nodeUrl" class="form-control" th:value="${nodeUrl}"
+                            placeholder="https://node.example.com:9092" autocomplete="off" autocapitalize="none"
+                            spellcheck="false" inputmode="url" maxlength="2048" aria-describedby="node-url-help" required>
+                        <p id="node-url-help" class="helper-text">Use the HTTPS Node API endpoint, including its port when required.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nodeUser" class="form-label">Node Username</label>
+                        <input type="text" id="nodeUser" name="nodeUser" class="form-control" th:value="${nodeUser}"
+                            placeholder="Node API account" autocomplete="off" autocapitalize="none" spellcheck="false"
+                            maxlength="128" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nodePassword" class="form-label">New Node Password <span class="helper-text">(optional)</span></label>
+                        <input type="password" id="nodePassword" name="nodePassword" class="form-control"
+                            placeholder="Leave blank to keep the current password" autocomplete="new-password"
+                            maxlength="4096">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Configuration</button>
+                        <a th:href="@{/admin/dashboard}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>
