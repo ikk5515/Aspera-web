@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>Manage Permissions - Aspera Web</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/theme :: themeLogic}"></th:block>
+</head>
+
+<body th:attr="data-user-id=${user.id},data-folders-url=@{/admin/api/folders},data-permissions-url=@{/admin/users/{id}/permissions(id=${user.id})}">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <nav class="navbar" aria-label="Administrator navigation">
+        <a th:href="@{/admin/dashboard}" class="navbar-brand">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"
+                focusable="false">
+                <path
+                    d="M16,2A14,14,0,1,0,30,16,14.0158,14.0158,0,0,0,16,2Zm0,26A12,12,0,1,1,28,16,12.0137,12.0137,0,0,1,16,28Z">
+                </path>
+                <path d="M15 11L15 21 17 21 17 11 15 11zM11 11L11 21 13 21 13 11 11 11zM19 11L19 21 21 21 21 11 19 11z">
+                </path>
+            </svg>
+            <span>Aspera Admin</span>
+        </a>
+        <div class="navbar-actions">
+            <th:block th:replace="~{fragments/theme :: toggleButton}"></th:block>
+            <a th:href="@{/admin/dashboard}" class="btn btn-secondary btn-sm">Dashboard</a>
+            <form th:action="@{/logout}" method="post" class="inline-form">
+                <button type="submit" class="btn btn-danger btn-sm">Sign Out</button>
+            </form>
+        </div>
+    </nav>
+
+    <main id="main-content" class="app-container" tabindex="-1">
+        <div th:if="${message}" class="alert alert-success" role="status" aria-live="polite">
+            <span th:text="${message}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-error" role="alert" aria-live="assertive">
+            <span th:text="${error}"></span>
+        </div>
+        <div id="permissionStatus" class="alert" role="status" aria-live="polite" hidden></div>
+
+        <section class="card card-wide" aria-labelledby="permission-title">
+            <header class="card-header">
+                <div class="page-heading">
+                    <h1 id="permission-title" class="card-title">
+                        Permissions for <span th:text="${user.username}">User</span>
+                    </h1>
+                    <p class="page-subtitle">Grant only the folder actions this account needs.</p>
+                </div>
+            </header>
+
+            <div class="card-body">
+                <section aria-labelledby="existing-permissions-title">
+                    <div class="toolbar">
+                        <div class="page-heading">
+                            <h2 id="existing-permissions-title" class="card-title">Existing Permissions</h2>
+                            <p class="page-subtitle">Switch changes are saved immediately.</p>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive responsive-card-table">
+                        <table>
+                            <caption class="sr-only">Existing folder permissions for this user</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Path</th>
+                                    <th scope="col">Upload</th>
+                                    <th scope="col">Download</th>
+                                    <th scope="col">Create Folder</th>
+                                    <th scope="col">Delete</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="perm : ${user.permissions}" th:data-existing-path="${perm.path}">
+                                    <td data-label="Path" class="path-text" th:text="${perm.path}">/folder</td>
+                                    <td data-label="Upload">
+                                        <label class="switch-checkbox">
+                                            <input type="checkbox" th:checked="${perm.canUpload}"
+                                                th:aria-label="|Allow uploads for ${perm.path}|"
+                                                class="permission-toggle" th:data-permission-id="${perm.id}"
+                                                data-permission-field="canUpload">
+                                            <span class="checkmark" aria-hidden="true"></span>
+                                        </label>
+                                    </td>
+                                    <td data-label="Download">
+                                        <label class="switch-checkbox">
+                                            <input type="checkbox" th:checked="${perm.canDownload}"
+                                                th:aria-label="|Allow downloads for ${perm.path}|"
+                                                class="permission-toggle" th:data-permission-id="${perm.id}"
+                                                data-permission-field="canDownload">
+                                            <span class="checkmark" aria-hidden="true"></span>
+                                        </label>
+                                    </td>
+                                    <td data-label="Create Folder">
+                                        <label class="switch-checkbox">
+                                            <input type="checkbox" th:checked="${perm.canCreateFolder}"
+                                                th:aria-label="|Allow folder creation for ${perm.path}|"
+                                                class="permission-toggle" th:data-permission-id="${perm.id}"
+                                                data-permission-field="canCreateFolder">
+                                            <span class="checkmark" aria-hidden="true"></span>
+                                        </label>
+                                    </td>
+                                    <td data-label="Delete">
+                                        <label class="switch-checkbox">
+                                            <input type="checkbox" th:checked="${perm.canDelete}"
+                                                th:aria-label="|Allow deletion for ${perm.path}|"
+                                                class="permission-toggle" th:data-permission-id="${perm.id}"
+                                                data-permission-field="canDelete">
+                                            <span class="checkmark" aria-hidden="true"></span>
+                                        </label>
+                                    </td>
+                                    <td data-label="Actions">
+                                        <div class="table-actions">
+                                            <form th:action="@{/admin/users/{id}/permissions/delete(id=${user.id})}"
+                                                method="post" class="inline-form confirm-permission-removal">
+                                                <input type="hidden" name="permissionId" th:value="${perm.id}">
+                                                <button type="submit" class="btn btn-danger btn-sm"
+                                                    th:aria-label="|Remove permission for ${perm.path}|">Remove</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr th:if="${user.permissions.empty}" class="empty-table-row">
+                                    <td colspan="6" data-label="">
+                                        <div class="empty-state">
+                                            <span class="empty-state-icon" aria-hidden="true">📂</span>
+                                            <strong>No folder permissions assigned</strong>
+                                            <p>Select folders below to grant access.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="form-section mt-3" aria-labelledby="add-permission-title">
+                    <h2 id="add-permission-title" class="card-title">Add Permission</h2>
+                    <p class="page-subtitle mb-3">Choose one or more folders, then select the allowed actions.</p>
+
+                    <form th:action="@{/admin/users/{id}/permissions(id=${user.id})}" method="post"
+                        id="addPermissionForm">
+                        <div class="form-section form-section-emphasis">
+                            <div class="section-label">
+                                <span aria-hidden="true">1.</span>
+                                Target folders
+                            </div>
+
+                            <div id="selectedFoldersContainer" class="selected-tags" aria-live="polite">
+                                <div class="empty-state">No folders selected.</div>
+                            </div>
+                            <div id="hiddenPathsInputs"></div>
+
+                            <button id="openFolderPicker" type="button" class="btn btn-secondary w-100"
+                                aria-haspopup="dialog" aria-controls="folderModal">
+                                Select Folders
+                            </button>
+                        </div>
+
+                        <div class="form-section">
+                            <div class="section-label">
+                                <span aria-hidden="true">2.</span>
+                                Allowed actions
+                            </div>
+                            <div class="capabilities-grid">
+                                <label class="permission-checkbox">
+                                    <input type="checkbox" name="canUpload" value="true">
+                                    <span>Upload files</span>
+                                </label>
+                                <label class="permission-checkbox">
+                                    <input type="checkbox" name="canDownload" value="true">
+                                    <span>Download files</span>
+                                </label>
+                                <label class="permission-checkbox">
+                                    <input type="checkbox" name="canCreateFolder" value="true">
+                                    <span>Create folders</span>
+                                </label>
+                                <label class="permission-checkbox">
+                                    <input type="checkbox" name="canDelete" value="true">
+                                    <span>Delete items</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Grant Permissions</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <div id="folderModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="folder-modal-title"
+        aria-describedby="folder-modal-help" hidden>
+        <div class="modal-content">
+            <header class="modal-header">
+                <div class="page-heading">
+                    <h2 id="folder-modal-title">Select Folders</h2>
+                    <p id="folder-modal-help" class="page-subtitle">Select folders, then confirm your choices.</p>
+                </div>
+                <button id="closeFolderPicker" type="button" class="btn btn-secondary btn-sm btn-icon"
+                    aria-label="Close folder picker">×</button>
+            </header>
+
+            <div class="modal-body">
+                <div class="modal-toolbar">
+                    <div class="form-group">
+                        <label for="folderSearch" class="form-label">Search this folder</label>
+                        <input type="search" id="folderSearch" class="form-control" placeholder="Folder name"
+                            autocomplete="off">
+                    </div>
+                    <button id="folderSortButton" type="button" class="btn btn-secondary btn-sm"
+                        aria-label="Sort folders A to Z">A–Z</button>
+                    <button id="refreshFolders" type="button" class="btn btn-secondary btn-sm"
+                        aria-label="Refresh folder list">Refresh</button>
+                </div>
+
+                <div class="folder-path-bar">
+                    <span id="currentModalPath" class="folder-path" title="Current folder">/</span>
+                    <button id="folderUp" type="button" class="btn btn-secondary btn-sm">Up One Level</button>
+                </div>
+
+                <div id="folderList" class="folder-list" aria-live="polite" aria-busy="false">
+                    <div class="loading-state">Loading folders…</div>
+                </div>
+            </div>
+
+            <footer class="modal-footer">
+                <div class="meta-text" aria-live="polite">
+                    <span id="selectedCount">0</span> of 100 selected
+                </div>
+                <div class="modal-footer-actions">
+                    <button id="cancelFolderPicker" type="button" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmFolderSelection" type="button" class="btn btn-primary">Use Selected Folders</button>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script th:src="@{/js/user-permissions.js}" defer></script>
+</body>
+
+</html>

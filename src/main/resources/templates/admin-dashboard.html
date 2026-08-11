@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Admin Dashboard - Aspera Web</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <th:block th:replace="~{fragments/theme :: themeLogic}"></th:block>
+</head>
+
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <nav class="navbar" aria-label="Administrator navigation">
+        <a th:href="@{/admin/dashboard}" class="navbar-brand">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"
+                focusable="false">
+                <path
+                    d="M16,2A14,14,0,1,0,30,16,14.0158,14.0158,0,0,0,16,2Zm0,26A12,12,0,1,1,28,16,12.0137,12.0137,0,0,1,16,28Z">
+                </path>
+                <path d="M15 11L15 21 17 21 17 11 15 11zM11 11L11 21 13 21 13 11 11 11zM19 11L19 21 21 21 21 11 19 11z">
+                </path>
+            </svg>
+            <span>Aspera Admin</span>
+        </a>
+        <div class="navbar-actions">
+            <th:block th:replace="~{fragments/theme :: toggleButton}"></th:block>
+            <a th:href="@{/files}" class="btn btn-secondary btn-sm">File Browser</a>
+            <form th:action="@{/logout}" method="post" class="inline-form">
+                <button type="submit" class="btn btn-danger btn-sm">Sign Out</button>
+            </form>
+        </div>
+    </nav>
+
+    <main id="main-content" class="app-container" tabindex="-1">
+        <div th:if="${message}" class="alert alert-success" role="status" aria-live="polite">
+            <span th:text="${message}"></span>
+        </div>
+        <div th:if="${param.error}" class="alert alert-error" role="alert" aria-live="assertive">
+            <span th:text="${param.error}"></span>
+        </div>
+
+        <section class="card" aria-labelledby="user-management-title">
+            <header class="card-header">
+                <div class="page-heading">
+                    <h1 id="user-management-title" class="card-title">User Management</h1>
+                    <p class="page-subtitle"><span th:text="${totalItems}">0</span> registered accounts</p>
+                </div>
+                <div class="card-header-actions">
+                    <a th:href="@{/admin/users/new}" class="btn btn-primary btn-sm">Create User</a>
+                </div>
+            </header>
+            <div class="card-body">
+                <div class="table-responsive responsive-card-table">
+                    <table>
+                        <caption class="sr-only">Registered users and account management actions</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">Username</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Role</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="user : ${users}">
+                                <td data-label="ID" th:text="${user.id}">1</td>
+                                <td data-label="Username" th:text="${user.username}">admin</td>
+                                <td data-label="Email" th:text="${user.email}">admin@example.com</td>
+                                <td data-label="Role">
+                                    <span class="badge"
+                                        th:classappend="${user.role == 'ADMIN'} ? 'badge-admin' : 'badge-user'"
+                                        th:text="${user.role}">ADMIN</span>
+                                </td>
+                                <td data-label="Actions">
+                                    <div class="table-actions">
+                                        <a th:if="${user.role != 'ADMIN'}"
+                                            th:href="@{/admin/users/{id}/permissions(id=${user.id})}"
+                                            class="btn btn-secondary btn-sm"
+                                            th:aria-label="${'Manage permissions for ' + user.username}">Permissions</a>
+
+                                        <form th:if="${user.role != 'ADMIN'}" th:action="@{/admin/users/promote-admin}"
+                                            method="post" class="inline-form confirm-action"
+                                            data-confirm-message="Grant administrator privileges to this account?">
+                                            <input type="hidden" name="id" th:value="${user.id}">
+                                            <button type="submit" class="btn btn-primary btn-sm"
+                                                th:aria-label="${'Promote ' + user.username + ' to administrator'}">Promote</button>
+                                        </form>
+
+                                        <form th:if="${user.role == 'ADMIN' and user.username != currentUsername}"
+                                            th:action="@{/admin/users/revoke-admin}" method="post"
+                                            class="inline-form confirm-action"
+                                            data-confirm-message="Remove administrator privileges from this account?">
+                                            <input type="hidden" name="id" th:value="${user.id}">
+                                            <button type="submit" class="btn btn-warning btn-sm"
+                                                th:aria-label="${'Revoke administrator access from ' + user.username}">Revoke</button>
+                                        </form>
+
+                                        <form th:if="${user.role != 'ADMIN' or user.username != currentUsername}"
+                                            th:action="@{/admin/users/delete}" method="post"
+                                            class="inline-form confirm-action"
+                                            data-confirm-message="Permanently delete this account? This action cannot be undone.">
+                                            <input type="hidden" name="id" th:value="${user.id}">
+                                            <button type="submit" class="btn btn-danger btn-sm"
+                                                th:aria-label="${'Delete account ' + user.username}">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${users.empty}" class="empty-table-row">
+                                <td colspan="5" data-label="">
+                                    <div class="empty-state">
+                                        <span class="empty-state-icon" aria-hidden="true">👥</span>
+                                        <strong>No users found</strong>
+                                        <p>Create an account to get started.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <nav th:if="${totalPages > 1}" class="pagination-wrap" aria-label="User list pages">
+                    <span class="pagination-summary">
+                        Showing <span th:text="${users.size()}">0</span> of <span th:text="${totalItems}">0</span> users
+                    </span>
+                    <ul class="pagination">
+                        <li class="page-item" th:classappend="${currentPage == 1} ? 'disabled'">
+                            <a th:if="${currentPage > 1}" class="page-link"
+                                th:href="@{/admin/dashboard(page=${currentPage - 1}, size=${pageSize})}"
+                                rel="prev">Previous</a>
+                            <span th:unless="${currentPage > 1}" class="page-link" aria-disabled="true">Previous</span>
+                        </li>
+
+                        <li class="page-item" th:each="i : ${pageNumbers}"
+                            th:classappend="${currentPage == i} ? 'active'">
+                            <a class="page-link" th:href="@{/admin/dashboard(page=${i}, size=${pageSize})}"
+                                th:text="${i}" th:attr="aria-current=${currentPage == i ? 'page' : null}">1</a>
+                        </li>
+
+                        <li class="page-item" th:classappend="${currentPage == totalPages} ? 'disabled'">
+                            <a th:if="${currentPage < totalPages}" class="page-link"
+                                th:href="@{/admin/dashboard(page=${currentPage + 1}, size=${pageSize})}"
+                                rel="next">Next</a>
+                            <span th:unless="${currentPage < totalPages}" class="page-link" aria-disabled="true">Next</span>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </section>
+
+        <section class="card" aria-labelledby="system-settings-title">
+            <header class="card-header">
+                <div class="page-heading">
+                    <h2 id="system-settings-title" class="card-title">System Settings</h2>
+                    <p class="page-subtitle">Manage the secure connection to the Aspera Node API.</p>
+                </div>
+            </header>
+            <div class="card-body">
+                <a th:href="@{/admin/node-settings}" class="btn btn-secondary">Node Configuration</a>
+            </div>
+        </section>
+    </main>
+    <script th:src="@{/js/admin-dashboard.js}" defer></script>
+</body>
+
+</html>
