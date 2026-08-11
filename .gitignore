@@ -1,0 +1,51 @@
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+config/*.properties
+config/*.yml
+config/*.yaml
+!config/*.example
+application-local.*
+application-secrets.*
+.pgpass
+pg_service.conf
+*.pem
+*.key
+*.p8
+*.pk8
+*.pkcs8
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Gradle and compiled output
+.gradle/
+build/
+bin/
+out/
+gradle-[0-9]*/
+
+# IDE and OS metadata
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs, dumps, and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*.pid
+*.hprof
+hs_err_pid*
+
+# Test and tooling reports
+.scannerwork/
+dependency-check-report.*
+reports/
