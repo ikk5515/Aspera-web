@@ -1,14 +1,16 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '4.1.0'
+    id 'org.springframework.boot' version '4.1.1'
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.aspera'
 version = '0.0.1-SNAPSHOT'
 
-// Boot 4.1.0 manages Jackson 3.1.4; 3.1.5 includes the current security fixes.
-ext['jackson-bom.version'] = '3.1.5'
+// Boot 4.1.1 manages Jackson 3.1.5 and Tomcat 11.0.24, which still have known vulnerabilities
+// (OSV: GHSA-7hhh-6rmp-j9qf, GHSA-9xv2-5v5q-p794 and others). Pin the fixed patch releases.
+ext['jackson-bom.version'] = '3.1.7'
+ext['tomcat.version'] = '11.0.26'
 
 java {
     sourceCompatibility = '17'
